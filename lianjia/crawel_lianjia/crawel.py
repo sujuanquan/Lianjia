@@ -3,12 +3,12 @@ from typing import OrderedDict
 import requests
 from bs4 import BeautifulSoup
 from pymongo import MongoClient,errors
-from pymongo.errors import DuplicateKeyError
 import time
 from info import city_info
 
 class LianjiaCrawler(object):
     def __init__(self):
+        #连接MongoDb
         self.client = MongoClient('mongodb://127.0.0.1:27017')
         self.db = self.client['Lianjia']
         self.collection = self.db['zufang_']
@@ -27,12 +27,14 @@ class LianjiaCrawler(object):
         ]
 
         for city, info in city_info.items():
-            for dist, dist_info in info[1].items():
 
+            for dist, dist_info in info[1].items():
+                #在每个城市的每个区爬取指定数目的数据
                 page = 1
                 dup= 1
                 con = 0
                 while con < 50:
+
                     url = f'https://{info[0]}.lianjia.com/zufang/{dist_info}/pg{page}/'
                     content = {
                     'user-agent':random.choice(user_agents),
@@ -58,12 +60,14 @@ class LianjiaCrawler(object):
 
     def get_content(self, content,item,dup):
 
+        #从爬取的数据中提取想要的内容储存到MongoDB
         soup = BeautifulSoup(content,'lxml')
         divs = soup.find_all('div',class_='content__list--item--main')
+
         print(f"找到 {len(divs)} 个div标签")
         if len(divs) < 10:
+            #说明没有更多数据了
             dup = 0
-            return dup
 
         for div in divs:
 
@@ -79,7 +83,6 @@ class LianjiaCrawler(object):
             item['address'] = ' '.join([a.get_text().strip() for p in p_tags for a in p.find_all('a')])
             if not item['address']:
                 item['address'] = "None"
-
             item['area'] = "None"
             item['room_type'] = "None"
             item['direction'] = "None"
